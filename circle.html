@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Document</title>
+</head>
+<style>
+* {
+	margin: 0;
+	padding: 0;
+}
+html,body {
+	height: 100%;
+}
+canvas {
+	background-color: #fff;
+}
+</style>
+<body>
+	<canvas id="canvas"></canvas>
+<script>
+window.utils = {};
+window.utils.captureMouse = function(element) {
+	var mouse = {
+		x: 0,
+		y: 0
+	};
+	element.addEventListener('mousemove',function(event) {
+		var x,y;
+		if (event.pageX || event.pageY) {
+			x = event.pageX;
+			y = event.pageY;
+		}else {
+			x = event.clientX + document.body.scrollLeft + documentElement.scrollLeft;
+			x = event.clientY + document.body.scrollTop + documentElement.scrollTop;
+		};
+		x -= element.offsetLeft;
+		y -= element.offsetTop;
+		mouse.x = x;
+		mouse.y = y;
+	},false);
+	return mouse;
+};
+var circleImg = new Image();
+circleImg.src = "img/circle.png";
+// var mouse = utils.captureMouse(canvas);//实例化
+window.onload = function() {
+	var canvas = document.getElementById('canvas');
+	var context = canvas.getContext('2d');
+	canvas.width = document.body.clientWidth;
+	canvas.height = document.body.clientHeight - 5;
+	var _w = canvas.width,
+		_h = canvas.height;
+	var x,y,point = [];
+	var speedMin = -1.5;
+    var speedMax = 1.5;
+    var FPS = 1000/60;
+	function isKnock(j) {//碰撞算法
+		var _tPoint = point[j];
+		for (let i = 0; i < point.length; i++) {
+			if (i != j) {
+				var _x = (point[i].x + point[i].sx) - (_tPoint.x + _tPoint.sx);
+				var _y = (point[i].y + point[i].sy) - (_tPoint.y + _tPoint.sy);
+				if (Math.sqrt(_x * _x + _y * _y) <= (point[i].yr + _tPoint.yr)) {
+		            var dvx = _tPoint.sx - point[i].sx;
+	                var dvy = _tPoint.sy - point[i].sy;
+	                var dx = _tPoint.x - point[i].x; 
+	                var dy = _tPoint.y - point[i].y;
+	                var xx_yy = dx * dx + dy * dy;
+	                var v_dvx = (dvx * dx * dx + dvy * dx * dy) / xx_yy;
+	                var v_dvy = (dvy * dy * dy + dvx * dx * dy) / xx_yy;
+					//碰撞后的速度
+	                _tPoint.sx = checkSpeed(_tPoint.sx - v_dvx);
+	                _tPoint.sy = checkSpeed(_tPoint.sy - v_dvy);
+	                point[i].sx = checkSpeed(point[i].sx + v_dvx);
+	                point[i].sy = checkSpeed(point[i].sy + v_dvy);
+				}
+			}
+		}
+	}
+	function checkSpeed(speed) {
+		if (speed < speedMin) {
+			speed = speedMin;
+		} else if (speed > speedMax) {
+			speed = speedMax;
+		}
+		return speed;
+	}
+	function retureF(num) {
+		return Math.round(num * 100) / 100;
+	}
+	function run() {
+		if (point.length <= 0) {
+			for (var i = 0; i < 30; i++) {
+				addCir();
+			}
+		}
+		context.clearRect(0,0,_w,_h);
+		context.strokeStyle="rgba(255,255,255,0)";
+		for (var i = 0; i < point.length; i++) {
+			drawCir(point[i]);
+			isKnock(i);
+			move(point[i]);
+		}	
+		requestAnimationFrame(run);	
+	}
+	function addCir() {
+		var x = getRandom(0, _w);
+		var y = getRandom(0, _h);
+		var yr = getRandom(30, 60);
+		var isDown = false;
+		for (let i = 0; i < point.length; i++) {
+			var _tLength = Math.sqrt(Math.pow((point[i].x - x),2) + Math.pow((point[i].y - y),2));
+			if (_tLength <= (yr + point[i].yr)) {
+				isDown = true;
+			}
+		}
+		if ((x - yr) <= 0 || (x + yr) >= _w || (y - yr) <= 0 || (y + yr) >= _h) {
+			isDown = true;
+		}
+		if (isDown) {
+			addCir()
+		}else {
+			point.push({
+				x : x,
+				y : y,
+				yr : yr,
+				sx : getRandom(speedMin, speedMax),
+				sy : getRandom(speedMin, speedMax)
+			});
+		}
+	}
+	function drawCir(point) {
+		context.beginPath();
+		context.lineWidth = 1;
+		context.arc(point.x,point.y,point.yr,0,2*Math.PI,true);
+		context.drawImage(circleImg, (point.x - point.yr), (point.y - point.yr), point.yr * 2, point.yr * 2);
+		context.stroke();
+	}
+	function move(point) {
+			if (point.x - point.yr <= 0) {
+				point.sx = -point.sx;
+			}else if (point.x + point.yr >= _w) {
+				point.sx = -point.sx;
+			}
+			if (point.y - point.yr <= 0) {
+				point.sy = -point.sy;
+			}else if (point.y + point.yr >= _h) {
+				point.sy = -point.sy;
+			}
+			point.x = point.x + point.sx;
+			point.y = point.y + point.sy;
+	}
+	function getRandom (min, max) {
+	    return Math.floor(Math.random() * (max - min)) + min;
+	}
+	run();
+}
+</script>
+</body>
+</html>

@@ -23,9 +23,17 @@ window.utils = {};
 window.utils.captureMouse = function(element) {
 	var mouse = {
 		x: 0,
-		y: 0
+		y: 0,
+		sx: 0,
+		sy: 0,
+		oldx: 0,
+		oldy: 0,
+		oldTime: 0,
+		isFirst: true,
+		isHover: false
 	};
 	element.addEventListener('mousemove',function(event) {
+		mouse.isHover = true;
 		var x,y;
 		if (event.pageX || event.pageY) {
 			x = event.pageX;
@@ -38,12 +46,34 @@ window.utils.captureMouse = function(element) {
 		y -= element.offsetTop;
 		mouse.x = x;
 		mouse.y = y;
+		if (mouse.isFirst) {
+			mouse.isFirst = false;
+			mouse.oldTime = new Date().getTime();
+			mouse.oldx = x;
+			mouse.oldx = y;
+		}
+		var nowTime = new Date().getTime();
+		if (nowTime - mouse.oldTime >= 20) {
+			mouse.oldTime = nowTime;
+			mouse.sx = x - mouse.oldx;
+			mouse.sy = y - mouse.oldy;
+			mouse.oldx = x;
+			mouse.oldy = y;
+		}
+	},false);
+	element.addEventListener('mouseout',function(event) {
+		mouse.isHover = false;
+		mouse.isFirst = true;
+		mouse.oldTime = 0;
+		mouse.oldx = 0;
+		mouse.oldx = 0;
+		mouse.sx = 0;
+		mouse.sy = 0;
 	},false);
 	return mouse;
 };
 var circleImg = new Image();
 circleImg.src = "img/circle.png";
-// var mouse = utils.captureMouse(canvas);//实例化
 window.onload = function() {
 	var canvas = document.getElementById('canvas');
 	var context = canvas.getContext('2d');
@@ -52,10 +82,46 @@ window.onload = function() {
 	var _w = canvas.width,
 		_h = canvas.height;
 	var x,y,point = [];
-	var speedMin = -1.5;
-    var speedMax = 1.5;
+	var mouse = utils.captureMouse(canvas);
+	var speedMin = -2;
+    var speedMax = 2;
     var FPS = 1000/60;
-	function isKnock(j) {//碰撞算法
+	function run() {
+		if (point.length <= 0) {
+			for (let i = 0; i < 30; i++) {
+				addCir();
+			}
+		}
+		context.clearRect(0,0,_w,_h);
+		context.strokeStyle="rgba(255,255,255,0)";
+		for (let i = 0; i < point.length; i++) {
+			drawCir(point[i]);
+			isKnock(i);
+			move(point[i]);
+		}
+		if (mouse.isHover) {
+			mouseHandle(mouse)
+		}
+		requestAnimationFrame(run);	
+	}
+	function mouseHandle(tm) {//鼠标事件
+		var _point = [];
+		for (let i = 0; i < point.length; i++) {
+			_point.push({
+				index: i,
+				length: Math.sqrt(Math.pow(point[i].x - tm.x, 2) + Math.pow(point[i].y - tm.y, 2))
+			})
+		}
+		_point.sort(sortLength);
+		if (_point[0].length <= point[_point[0].index].yr) {
+			point[_point[0].index].sx = checkSpeedm(tm.sx/2);
+			point[_point[0].index].sy = checkSpeedm(tm.sy/2);
+		}
+	}
+	function sortLength(a, b) {
+        return a.length - b.length
+    }
+    function isKnock(j) {//碰撞算法
 		var _tPoint = point[j];
 		for (let i = 0; i < point.length; i++) {
 			if (i != j) {
@@ -86,23 +152,13 @@ window.onload = function() {
 		}
 		return speed;
 	}
-	function retureF(num) {
-		return Math.round(num * 100) / 100;
-	}
-	function run() {
-		if (point.length <= 0) {
-			for (var i = 0; i < 30; i++) {
-				addCir();
-			}
+	function checkSpeedm(speed) {
+		if (speed < -3) {
+			speed = -3;
+		} else if (speed > 3) {
+			speed = 3;
 		}
-		context.clearRect(0,0,_w,_h);
-		context.strokeStyle="rgba(255,255,255,0)";
-		for (var i = 0; i < point.length; i++) {
-			drawCir(point[i]);
-			isKnock(i);
-			move(point[i]);
-		}	
-		requestAnimationFrame(run);	
+		return speed;
 	}
 	function addCir() {
 		var x = getRandom(0, _w);
@@ -138,18 +194,18 @@ window.onload = function() {
 		context.stroke();
 	}
 	function move(point) {
-			if (point.x - point.yr <= 0) {
-				point.sx = -point.sx;
-			}else if (point.x + point.yr >= _w) {
-				point.sx = -point.sx;
-			}
-			if (point.y - point.yr <= 0) {
-				point.sy = -point.sy;
-			}else if (point.y + point.yr >= _h) {
-				point.sy = -point.sy;
-			}
-			point.x = point.x + point.sx;
-			point.y = point.y + point.sy;
+		if (point.x - point.yr <= 0) {
+			point.sx = -point.sx;
+		}else if (point.x + point.yr >= _w) {
+			point.sx = -point.sx;
+		}
+		if (point.y - point.yr <= 0) {
+			point.sy = -point.sy;
+		}else if (point.y + point.yr >= _h) {
+			point.sy = -point.sy;
+		}
+		point.x = point.x + point.sx;
+		point.y = point.y + point.sy;
 	}
 	function getRandom (min, max) {
 	    return Math.floor(Math.random() * (max - min)) + min;

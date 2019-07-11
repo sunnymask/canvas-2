@@ -21,20 +21,21 @@ canvas {
 <script>
 window.utils = {};
 window.utils.captureMouse = function(element) {
-	var mouse = {
+	const mouse = {
 		x: 0,
 		y: 0,
-		sx: 0,
-		sy: 0,
+		sx: 2,
+		sy: 2,
 		oldx: 0,
 		oldy: 0,
+		circleR: 25,
 		oldTime: 0,
 		isFirst: true,
 		isHover: false
 	};
 	element.addEventListener('mousemove',function(event) {
 		mouse.isHover = true;
-		var x,y;
+		let x,y;
 		if (event.pageX || event.pageY) {
 			x = event.pageX;
 			y = event.pageY;
@@ -52,7 +53,7 @@ window.utils.captureMouse = function(element) {
 			mouse.oldx = x;
 			mouse.oldx = y;
 		}
-		var nowTime = new Date().getTime();
+		let nowTime = new Date().getTime();
 		if (nowTime - mouse.oldTime >= 1000/60) {
 			mouse.oldTime = nowTime;
 			mouse.sx = x - mouse.oldx;
@@ -67,29 +68,29 @@ window.utils.captureMouse = function(element) {
 		mouse.oldTime = 0;
 		mouse.oldx = 0;
 		mouse.oldx = 0;
-		mouse.sx = 0;
-		mouse.sy = 0;
+		mouse.sx = 2;
+		mouse.sy = 2;
 	},false);
 	return mouse;
 };
-var circleImg = new Image();
-var circleImg1 = new Image();
-var circleImg2 = new Image();
+let circleImg = new Image();
+let circleImg1 = new Image();
+let circleImg2 = new Image();
 circleImg.src = "img/circle.png";
 circleImg1.src = "img/circle1.png";
 circleImg2.src = "img/circle2.png";
 window.onload = function() {
-	var canvas = document.getElementById('canvas');
-	var context = canvas.getContext('2d');
+	const canvas = document.getElementById('canvas');
+	const context = canvas.getContext('2d');
 	canvas.width = document.body.clientWidth;
 	canvas.height = document.body.clientHeight - 5;
-	var _w = canvas.width,
+	const _w = canvas.width,
 		_h = canvas.height;
-	var x,y,point = [];
-	var mouse = utils.captureMouse(canvas);
-	var speedMin = -2;
-    var speedMax = 2;
-    var FPS = 1000/60;
+	let mouse = utils.captureMouse(canvas);
+	const speedMin = -2;
+    const speedMax = 2;
+    const FPS = 1000/60;
+    let x,y,point = [];
 	function run() {
 		if (point.length <= 0) {
 			for (let i = 0; i < 30; i++) {
@@ -98,18 +99,24 @@ window.onload = function() {
 		}
 		context.clearRect(0,0,_w,_h);
 		context.strokeStyle="rgba(255,255,255,0)";
+		if (mouse.isHover) {//鼠标进入事件
+			context.beginPath();
+			context.lineWidth = 1;
+			context.arc(mouse.x,mouse.y,mouse.circleR,0,2*Math.PI,true);
+			context.drawImage(circleImg2, (mouse.x - mouse.circleR), (mouse.y - mouse.circleR), mouse.circleR * 2, mouse.circleR * 2);
+			context.stroke();
+			mouseHandle(mouse);
+		}
 		for (let i = 0; i < point.length; i++) {
 			drawCir(point[i]);
 			isKnock(i);
 			move(point[i]);
 		}
-		/*if (mouse.isHover) {
-			mouseHandle(mouse)
-		}*/
+
 		requestAnimationFrame(run);	
 	}
 	function mouseHandle(tm) {//鼠标事件
-		var _point = [];
+		let _point = [];
 		for (let i = 0; i < point.length; i++) {
 			_point.push({
 				index: i,
@@ -117,28 +124,38 @@ window.onload = function() {
 			})
 		}
 		_point.sort(sortLength);
-		if (_point[0].length <= point[_point[0].index].yr) {
-			point[_point[0].index].sx = checkSpeedm(tm.sx/2);
-			point[_point[0].index].sy = checkSpeedm(tm.sy/2);
+		if (_point[0].length <= (point[_point[0].index].yr + tm.circleR)) {
+			/*point[_point[0].index].sx = checkSpeedm(tm.sx/2);
+			point[_point[0].index].sy = checkSpeedm(tm.sy/2);*/
+			let dvx = tm.sx - point[_point[0].index].sx;
+            let dvy = tm.sy - point[_point[0].index].sy;
+            let dx = tm.x - point[_point[0].index].x;
+            let dy = tm.y - point[_point[0].index].y;
+            let xx_yy = dx * dx + dy * dy;
+            let v_dvx = (dvx * dx * dx + dvy * dx * dy) / xx_yy;
+            let v_dvy = (dvy * dy * dy + dvx * dx * dy) / xx_yy;
+			//碰撞后的速度
+            point[_point[0].index].sx = checkSpeed(point[_point[0].index].sx + v_dvx);
+            point[_point[0].index].sy = checkSpeed(point[_point[0].index].sy + v_dvy);
 		}
 	}
 	function sortLength(a, b) {
         return a.length - b.length
     }
     function isKnock(j) {//碰撞算法
-		var _tPoint = point[j];
+		let _tPoint = point[j];
 		for (let i = 0; i < point.length; i++) {
 			if (i != j) {
-				var _x = (point[i].x + point[i].sx) - (_tPoint.x + _tPoint.sx);
-				var _y = (point[i].y + point[i].sy) - (_tPoint.y + _tPoint.sy);
+				let _x = (point[i].x + point[i].sx) - (_tPoint.x + _tPoint.sx);
+				let _y = (point[i].y + point[i].sy) - (_tPoint.y + _tPoint.sy);
 				if (Math.sqrt(_x * _x + _y * _y) <= (point[i].yr + _tPoint.yr)) {
-		            var dvx = _tPoint.sx - point[i].sx;
-	                var dvy = _tPoint.sy - point[i].sy;
-	                var dx = _tPoint.x - point[i].x;
-	                var dy = _tPoint.y - point[i].y;
-	                var xx_yy = dx * dx + dy * dy;
-	                var v_dvx = (dvx * dx * dx + dvy * dx * dy) / xx_yy;
-	                var v_dvy = (dvy * dy * dy + dvx * dx * dy) / xx_yy;
+		            let dvx = _tPoint.sx - point[i].sx;
+	                let dvy = _tPoint.sy - point[i].sy;
+	                let dx = _tPoint.x - point[i].x;
+	                let dy = _tPoint.y - point[i].y;
+	                let xx_yy = dx * dx + dy * dy;
+	                let v_dvx = (dvx * dx * dx + dvy * dx * dy) / xx_yy;
+	                let v_dvy = (dvy * dy * dy + dvx * dx * dy) / xx_yy;
 					//碰撞后的速度
 	                _tPoint.sx = checkSpeed(_tPoint.sx - v_dvx);
 	                _tPoint.sy = checkSpeed(_tPoint.sy - v_dvy);
@@ -165,12 +182,12 @@ window.onload = function() {
 		return speed;
 	}
 	function addCir() {
-		var x = getRandom(0, _w);
-		var y = getRandom(0, _h);
-		var yr = getRandom(30, 60);
-		var isDown = false;
+		let x = getRandom(0, _w);
+		let y = getRandom(0, _h);
+		let yr = getRandom(30, 60);
+		let isDown = false;
 		for (let i = 0; i < point.length; i++) {
-			var _tLength = Math.sqrt(Math.pow((point[i].x - x),2) + Math.pow((point[i].y - y),2));
+			let _tLength = Math.sqrt(Math.pow((point[i].x - x),2) + Math.pow((point[i].y - y),2));
 			if (_tLength <= (yr + point[i].yr)) {
 				isDown = true;
 			}
@@ -187,7 +204,7 @@ window.onload = function() {
 				yr : yr,
 				sx : getRandom(speedMin, speedMax),
 				sy : getRandom(speedMin, speedMax),
-				cirimg: Math.random() <= 0.5 ? circleImg : circleImg
+				cirimg: circleImg
 			});
 		}
 	}

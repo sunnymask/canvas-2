@@ -28,7 +28,7 @@ window.utils.captureMouse = function(element) {
 		sy: 2,
 		oldx: 0,
 		oldy: 0,
-		circleR: 25,
+		circleR: 100,
 		oldTime: 0,
 		isFirst: true,
 		isHover: false
@@ -103,7 +103,7 @@ window.onload = function() {
 			context.beginPath();
 			context.lineWidth = 1;
 			context.arc(mouse.x,mouse.y,mouse.circleR,0,2*Math.PI,true);
-			context.drawImage(circleImg2, (mouse.x - mouse.circleR), (mouse.y - mouse.circleR), mouse.circleR * 2, mouse.circleR * 2);
+			/*context.drawImage(circleImg2, (mouse.x - mouse.circleR), (mouse.y - mouse.circleR), mouse.circleR * 2, mouse.circleR * 2);*/
 			context.stroke();
 			mouseHandle(mouse);
 		}
